@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
+import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
+import { WithLock } from 'src/engine/core-modules/cache-lock/with-lock.decorator';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { type WorkflowRunWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
@@ -23,6 +25,10 @@ export class WorkflowRunStepLogWorkspaceService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
   ) {}
+
+  // Parallel branches call this concurrently for the same run; the lock keeps
+  // the read-merge-write from losing a branch's log
+  @WithLock('workflowRunId')
   async setStepLog({
     workflowRunId,
     workspaceId,
@@ -59,19 +65,27 @@ export class WorkflowRunStepLogWorkspaceService {
           { shouldBypassPermissionChecks: true },
         );
 
-      await workflowRunRepository
-        .createQueryBuilder()
-        .update()
-        .set({
-          stepLogs: () =>
-            `jsonb_set(COALESCE("stepLogs", '{}'::jsonb), ARRAY[:stepId]::text[], :stepLog::jsonb, true)`,
-        })
-        .where('id = :workflowRunId', { workflowRunId })
-        .setParameters({
-          stepId,
-          stepLog: JSON.stringify(stepLogWithSize),
-        })
-        .execute();
+      const workflowRun = await workflowRunRepository.findOne({
+        where: { id: workflowRunId },
+        select: ['id', 'stepLogs'],
+      });
+
+      if (!workflowRun) {
+        this.logger.warn(
+          `Cannot store step log: workflowRun=${workflowRunId} not found`,
+        );
+
+        return;
+      }
+
+      const partialUpdate = {
+        stepLogs: {
+          ...(workflowRun.stepLogs ?? {}),
+          [stepId]: stepLogWithSize,
+        },
+      } as QueryDeepPartialEntity<WorkflowRunWorkspaceEntity>;
+
+      await workflowRunRepository.update(workflowRunId, partialUpdate);
     }, authContext);
   }
 }
