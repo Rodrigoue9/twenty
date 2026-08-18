@@ -180,6 +180,44 @@ describe('WorkspaceMutationQueryBuilderV2', () => {
     expect(values).toEqual(['Tech Lead', null, 'id-1']);
   });
 
+  it('should skip undefined set values instead of writing NULL', () => {
+    const { selectQueryBuilder } = buildBuilders();
+
+    const [sql, values] = selectQueryBuilder
+      .where('"person"."id" = :id', { id: 'id-1' })
+      .update()
+      .set({ deletedAt: null, companyId: undefined })
+      .returning(['id'])
+      .getQueryAndParameters();
+
+    expect(sql).toBe(
+      `UPDATE "${SCHEMA_NAME}"."person" AS "person" ` +
+        'SET "deletedAt" = $1, "updatedAt" = CURRENT_TIMESTAMP ' +
+        'WHERE ("person"."id" = $2) ' +
+        'RETURNING "person"."id" AS "person_id"',
+    );
+    expect(values).toEqual([null, 'id-1']);
+  });
+
+  it('should keep updatedAt maintenance when the caller sets updatedAt to undefined', () => {
+    const { selectQueryBuilder } = buildBuilders();
+
+    const [sql, values] = selectQueryBuilder
+      .where('"person"."id" = :id', { id: 'id-1' })
+      .update()
+      .set({ jobTitle: 'Tech Lead', updatedAt: undefined })
+      .returning(['id'])
+      .getQueryAndParameters();
+
+    expect(sql).toBe(
+      `UPDATE "${SCHEMA_NAME}"."person" AS "person" ` +
+        'SET "jobTitle" = $1, "updatedAt" = CURRENT_TIMESTAMP ' +
+        'WHERE ("person"."id" = $2) ' +
+        'RETURNING "person"."id" AS "person_id"',
+    );
+    expect(values).toEqual(['Tech Lead', 'id-1']);
+  });
+
   it('should return formatted rows from execute', async () => {
     const { selectQueryBuilder, executedStatements } = buildBuilders({
       rows: [{ person_id: 'id-1' }, { person_id: 'id-2' }],

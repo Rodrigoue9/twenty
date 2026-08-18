@@ -12,6 +12,7 @@ import {
 } from 'src/engine/twenty-orm-v2/sql/utils/build-select-statement.util';
 import { compileNamedParameters } from 'src/engine/twenty-orm-v2/sql/utils/compile-named-parameters.util';
 import { serializeJsonbWriteValue } from 'src/engine/twenty-orm-v2/sql/utils/serialize-jsonb-write-value.util';
+import { stripUndefinedValues } from 'src/engine/twenty-orm-v2/utils/strip-undefined-values.util';
 import {
   buildMutationStatement,
   type MutationKind,
@@ -68,7 +69,8 @@ export class WorkspaceMutationQueryBuilderV2 {
   }
 
   set(record: Record<string, unknown>): this {
-    this.setRecord = record;
+    // TypeORM skips undefined properties instead of writing NULL; match it
+    this.setRecord = stripUndefinedValues(record);
 
     return this;
   }

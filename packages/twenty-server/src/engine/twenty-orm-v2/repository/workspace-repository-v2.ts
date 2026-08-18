@@ -15,6 +15,7 @@ import { FilesFieldSync } from 'src/engine/twenty-orm/field-operations/files-fie
 import { validateOperationIsPermittedOrThrow } from 'src/engine/twenty-orm/repository/permissions.utils';
 import { type WorkspaceInternalContext } from 'src/engine/twenty-orm/interfaces/workspace-internal-context.interface';
 import { formatData } from 'src/engine/twenty-orm/utils/format-data.util';
+import { stripUndefinedValues } from 'src/engine/twenty-orm-v2/utils/strip-undefined-values.util';
 import { formatResult } from 'src/engine/twenty-orm/utils/format-result.util';
 import { formatTwentyOrmEventToDatabaseBatchEvent } from 'src/engine/twenty-orm/utils/format-twenty-orm-event-to-database-batch-event.util';
 import { renderRowLevelPermissionFilterToSql } from 'src/engine/twenty-orm/utils/render-row-level-permission-filter-to-sql.util';
@@ -972,10 +973,12 @@ export class WorkspaceRepositoryV2 {
     }
 
     for (const [index, input] of inputs.entries()) {
-      const { id: _id, ...setColumns } = formatData(
-        dataByInputIndex[index],
-        this.options.flatObjectMetadata,
-        this.options.internalContext.flatFieldMetadataMaps,
+      const { id: _id, ...setColumns } = stripUndefinedValues(
+        formatData(
+          dataByInputIndex[index],
+          this.options.flatObjectMetadata,
+          this.options.internalContext.flatFieldMetadataMaps,
+        ),
       );
 
       this.validateWriteIsPermitted({
@@ -1038,11 +1041,14 @@ export class WorkspaceRepositoryV2 {
     insertedColumns: string[];
     formattedRecords: Record<string, unknown>[];
   } {
+    // An undefined value must render as DEFAULT (key omitted), not NULL
     const formattedRecords = records.map((record) =>
-      formatData(
-        record,
-        this.options.flatObjectMetadata,
-        this.options.internalContext.flatFieldMetadataMaps,
+      stripUndefinedValues(
+        formatData(
+          record,
+          this.options.flatObjectMetadata,
+          this.options.internalContext.flatFieldMetadataMaps,
+        ),
       ),
     );
 
@@ -1218,10 +1224,12 @@ export class WorkspaceRepositoryV2 {
 
     const setColumns =
       kind === 'update' && isDefined(dataToWrite)
-        ? formatData(
-            dataToWrite,
-            this.options.flatObjectMetadata,
-            this.options.internalContext.flatFieldMetadataMaps,
+        ? stripUndefinedValues(
+            formatData(
+              dataToWrite,
+              this.options.flatObjectMetadata,
+              this.options.internalContext.flatFieldMetadataMaps,
+            ),
           )
         : undefined;
 
