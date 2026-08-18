@@ -28,6 +28,26 @@ describe('resolveViewName', () => {
     ).toBe('All Entreprises');
   });
 
+  it('capitalizes the object label it substitutes', () => {
+    expect(
+      resolveViewName({
+        view: { name: 'All {objectLabelPlural}' },
+        objectLabelPlural: 'widgets',
+        i18nContext: buildContext(),
+      }),
+    ).toBe('All Widgets');
+  });
+
+  it('substitutes the singular object label too', () => {
+    expect(
+      resolveViewName({
+        view: { name: '{objectLabelSingular} Record Page' },
+        objectLabelSingular: 'widget',
+        i18nContext: buildContext(),
+      }),
+    ).toBe('Widget Record Page');
+  });
+
   it('leaves the placeholder alone when no object label is available', () => {
     expect(
       resolveViewName({
