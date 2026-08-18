@@ -200,8 +200,8 @@ describe('resolveOverridableEntityEventBatchOverrides', () => {
     });
   });
 
-  describe('pageLayoutWidget (another overridable entity)', () => {
-    it('should resolve overrides for pageLayoutWidget and keep isActive', () => {
+  describe('pageLayoutWidget (translatable, resolved at delivery)', () => {
+    it('should leave a translatable entity untouched so delivery can arbitrate', () => {
       const after = {
         id: 'plw-1',
         workspaceId: 'ws-1',
@@ -236,8 +236,8 @@ describe('resolveOverridableEntityEventBatchOverrides', () => {
         result.events[0] as { properties: { after: Record<string, unknown> } }
       ).properties.after;
 
-      expect(createdRecord.title).toBe('Overridden Title');
-      expect(createdRecord).not.toHaveProperty('overrides');
+      expect(createdRecord.title).toBe('Original');
+      expect(createdRecord.overrides).toEqual({ title: 'Overridden Title' });
       expect(createdRecord).toHaveProperty('isActive', true);
     });
   });

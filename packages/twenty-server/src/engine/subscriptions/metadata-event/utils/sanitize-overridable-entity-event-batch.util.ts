@@ -4,11 +4,12 @@ import { isDefined } from 'twenty-shared/utils';
 import { type MetadataEventBatch } from 'src/engine/subscriptions/metadata-event/types/metadata-event-batch.type';
 import { type MetadataEvent } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/types/metadata-event';
 
+// Translatable entities are deliberately absent: their overrides have to
+// survive to delivery, where the subscriber's locale decides whether the base
+// value is translated or the workspace's own text wins. Flattening here would
+// hand the translator user-authored strings.
 const OVERRIDABLE_ENTITY_METADATA_NAMES = new Set<AllMetadataName>([
   'viewField',
-  'viewFieldGroup',
-  'pageLayoutTab',
-  'pageLayoutWidget',
 ]);
 
 const resolveRecordOverrides = (
