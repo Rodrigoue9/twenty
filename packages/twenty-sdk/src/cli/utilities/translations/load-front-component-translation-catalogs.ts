@@ -9,6 +9,7 @@ import {
 
 import { type TranslationCatalogsByLocale } from '@/sdk/front-component/translations/message';
 import { pathExists, readJson } from '@/cli/utilities/file/fs-utils';
+import { compileCatalogToMessageIds } from '@/cli/utilities/translations/compile-catalog-to-message-ids';
 import { LOCALES_DIR } from '@/cli/utilities/translations/constants';
 
 const isSupportedLocale = (locale: string): locale is AppLocale =>
@@ -41,16 +42,10 @@ export const loadFrontComponentTranslationCatalogs = async (
         path.join(localesDir, localeFile),
       )) ?? {};
 
-    const nonEmptyEntries: Record<string, string> = {};
+    const compiled = compileCatalogToMessageIds({ catalog });
 
-    for (const [key, value] of Object.entries(catalog)) {
-      if (typeof value === 'string' && value.length > 0) {
-        nonEmptyEntries[key] = value;
-      }
-    }
-
-    if (Object.keys(nonEmptyEntries).length > 0) {
-      catalogs[locale] = nonEmptyEntries;
+    if (Object.keys(compiled).length > 0) {
+      catalogs[locale] = compiled;
     }
   }
 
