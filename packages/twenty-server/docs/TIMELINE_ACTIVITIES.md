@@ -178,15 +178,21 @@ Two facts make this the right backbone:
   (`compute-message-list-standard-flat-field-metadata.util.ts:205`,
   `compute-person-standard-flat-field-metadata.util.ts:520`). `note.noteTargets`
   and `task.taskTargets` do not
-  (`compute-note-standard-flat-field-metadata.util.ts:242-244`). The gap is
-  already known and papered over: `get-is-flat-field-a-junction-relation-field.ts`
-  carries `// TODO: refactor this when we remove hard-coded activity relations`
-  above a literal `flatField.name === 'note' || flatField.name === 'task'`.
+  (`compute-note-standard-flat-field-metadata.util.ts:242-244`), so activity
+  targets are the only junctions the metadata does not describe as such.
 
 Declaring the junction target on `note.noteTargets` and `task.taskTargets` is a
-metadata-only change that deletes that TODO and turns the note/task fan-out from
-a special case into an instance of a general concept. It is the prerequisite for
-everything below.
+metadata-only change that turns the note/task fan-out from a special case into an
+instance of a general concept. It is the prerequisite for everything below.
+
+A near miss worth naming: `get-is-flat-field-a-junction-relation-field.ts` carries
+`// TODO: refactor this when we remove hard-coded activity relations` above a
+literal `flatField.name === 'note' || flatField.name === 'task'`. It looks like
+the same problem but is not. That helper decides which relation fields to recurse
+into when selecting fields on a junction table, a to-one recursion question, and
+`noteTarget.note` is already `MANY_TO_ONE`, so the name clause is redundant rather
+than load bearing. Declaring the junction target does not remove it, and removing
+it belongs to a separate select-fields cleanup.
 
 ## 3. Two directions, two mechanisms
 
@@ -681,10 +687,8 @@ fixes it. No production code changes.
 **Phase 1: declare the junctions.** Add `junctionTargetFieldUniversalIdentifier` to
 `note.noteTargets` and `task.taskTargets`, pointing at
 `STANDARD_OBJECTS.noteTarget.fields.targetPerson.universalIdentifier` and its task
-equivalent (any morph member; the engine expands the group via `morphId`). Delete
-the `flatField.name === 'note' || flatField.name === 'task'` special case in
-`get-is-flat-field-a-junction-relation-field.ts` and its TODO. Add a workspace
-command to backfill the setting on existing workspaces, mirroring
+equivalent (any morph member; the engine expands the group via `morphId`). Add a
+workspace command to backfill the setting on existing workspaces, mirroring
 `2-25-workspace-command-...-backfill-message-list-members-junction-target.command.ts`.
 Small, independently valuable, prerequisite for phase 2.
 
