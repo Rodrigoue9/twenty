@@ -128,10 +128,12 @@ export class TimelineActivityRepository {
       createdAt: MoreThan(tenMinutesAgo),
     };
 
+    // The where clause is already scoped to this batch payloads and to the merge
+    // window, so every candidate is fetched: taking a single row would let only
+    // one payload of a multi record batch merge.
     return await timelineActivityTypeORMRepository.find({
       where: whereConditions,
       order: { createdAt: 'DESC' },
-      take: 1,
     });
   }
 
